@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Digital Lab · 数字实验室</title>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --panel: rgba(255,255,255,0.04);
+    --border: rgba(120,200,255,0.18);
+    --text: #e6f1ff;
+    --muted: #8aa0c0;
+    --accent: #22d3ee;
+    --accent2: #818cf8;
+    --glow: 0 0 24px rgba(34,211,238,0.35);
+  }
+  [data-theme="light"] {
+    --bg: #eef3fa;
+    --panel: rgba(255,255,255,0.75);
+    --border: rgba(20,80,160,0.18);
+    --text: #0b1b33;
+    --muted: #4a607f;
+    --accent: #0891b2;
+    --accent2: #6366f1;
+    --glow: 0 0 24px rgba(8,145,178,0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    transition: background .5s, color .5s;
+    position: relative;
+  }
+  /* animated background grid + glow */
+  #grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(34,211,238,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,211,238,0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    animation: drift 40s linear infinite;
+  }
+  #orb1, #orb2 {
+    position: fixed; border-radius: 50%; filter: blur(90px);
+    z-index: 0; pointer-events: none; opacity: .55;
+  }
+  #orb1 { width: 420px; height: 420px; background: var(--accent); top: -140px; left: -120px; animation: float1 18s ease-in-out infinite; }
+  #orb2 { width: 420px; height: 420px; background: var(--accent2); bottom: -160px; right: -120px; animation: float2 22s ease-in-out infinite; }
+  @keyframes drift { to { background-position: 44px 44px; } }
+  @keyframes float1 { 50% { transform: translate(60px, 40px) scale(1.1); } }
+  @keyframes float2 { 50% { transform: translate(-70px, -50px) scale(1.15); } }
+
+  .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 30px;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: grid; place-items: center; font-weight: 800; font-size: 22px; color: #fff;
+    box-shadow: var(--glow);
+  }
+  .brand h1 { font-size: 22px; letter-spacing: 1px; }
+  .brand small { display: block; color: var(--muted); font-weight: 400; letter-spacing: 2px; font-size: 11px; }
+
+  .toggle {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    border: 1px solid var(--border); padding: 7px 14px; border-radius: 999px;
+    background: var(--panel); font-size: 13px; color: var(--text);
+    user-select: none; transition: background .3s;
+  }
+  .toggle:hover { background: rgba(34,211,238,0.12); }
+  .toggle .dot { width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: var(--glow); }
+
+  .hero { margin-bottom: 26px; }
+  .hero .clock { font-size: 60px; font-weight: 800; letter-spacing: 3px; background: linear-gradient(120deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+  .hero .date { color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 30px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; backdrop-filter: blur(8px);
+    transition: transform .25s, box-shadow .25s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: var(--glow); }
+  .card .label { color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+  .card .value { font-size: 30px; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; backdrop-filter: blur(8px); margin-bottom: 20px;
+  }
+  .panel h2 { font-size: 15px; margin-bottom: 14px; letter-spacing: 1px; color: var(--accent); }
+
+  /* interactive counter */
+  .counter { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .counter .num { font-size: 56px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 130px; }
+  .btn {
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    padding: 12px 22px; border-radius: 12px; cursor: pointer; font-size: 15px;
+    transition: background .2s, transform .1s, box-shadow .2s;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; box-shadow: var(--glow); }
+  .btn:hover { box-shadow: var(--glow); }
+
+  /* progress interactive */
+  .progress-track { height: 14px; border-radius: 999px; background: rgba(120,160,220,0.15); overflow: hidden; margin-top: 10px; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s ease; box-shadow: var(--glow); }
+
+  .flex { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; letter-spacing: 1px; }
+  footer .tag { color: var(--accent); }
+
+  @media (max-width: 520px) {
+    .hero .clock { font-size: 42px; }
+    .card .value { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div id="grid"></div>
+<div id="orb1"></div>
+<div id="orb2"></div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">D</div>
+      <div>
+        <h1>DIGITAL LAB</h1>
+        <small>数字实验室 · 实时驱动</small>
+      </div>
+    </div>
+    <div class="toggle" id="themeToggle" role="button" tabindex="0">
+      <span class="dot"></span>
+      <span id="themeLabel">夜 空</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="clock" id="clock">00:00:00</div>
+    <div class="date" id="date">—</div>
+  </section>
+
+  <section class="stats">
+    <div class="card"><div class="label">CPU / 负载</div><div class="value" id="cpu">0%</div></div>
+    <div class="card"><div class="label">网络 / 延迟</div><div class="value" id="latency">0 ms</div></div>
+    <div class="card"><div class="label">会话 / 计数</div><div class="value" id="session">0</div></div>
+    <div class="card"><div class="label">能量 / FPS</div><div class="value" id="fps">0</div></div>
+  </section>
+
+  <div class="panel">
+    <h2>⚡ 交互计数器</h2>
+    <div class="counter">
+      <div class="num" id="count">0</div>
+      <button class="btn primary" id="addBtn">＋ 加一</button>
+      <button class="btn" id="minusBtn">－ 减一</button>
+      <button class="btn" id="resetBtn">↺ 归零</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📈 能量进度（点击充电）</h2>
+    <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
+    <div class="flex">
+      <button class="btn primary" id="chargeBtn">⚡ 充电 +12%</button>
+      <button class="btn" id="drainBtn">▽ 放电 -12%</button>
+    </div>
+  </div>
+
+  <footer>Digital Lab · built with <span class="tag">modern</span> stack · <span id="status">ONLINE</span></footer>
+</div>
+
+<script>
+  // ---- Theme toggle ----
+  const root = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  const label = document.getElementById('themeLabel');
+  function setTheme(t) {
+    root.setAttribute('data-theme', t);
+    label.textContent = t === 'light' ? '白 昼' : '夜 空';
+    localStorage.setItem('dl-theme', t);
+  }
+  setTheme(localStorage.getItem('dl-theme') || 'dark');
+  toggle.addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'light' ? 'dark' : 'light'));
+  toggle.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle.click(); } });
+
+  // ---- Live clock ----
+  const clockEl = document.getElementById('clock');
+  const dateEl = document.getElementById('date');
+  const days = ['日','一','二','三','四','五','六'];
+  function tick() {
+    const n = new Date();
+    const p = x => String(x).padStart(2, '0');
+    clockEl.textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+    dateEl.textContent = `${n.getFullYear()} 年 ${n.getMonth()+1} 月 ${n.getDate()} 日 · 星期${days[n.getDay()]}`;
+  }
+  setInterval(tick, 1000); tick();
+
+  // ---- Monte-carlo "live" stats (simulated telemetry) ----
+  const cpuEl = document.getElementById('cpu'), latEl = document.getElementById('latency');
+  const mem = new Array(20).fill(0);
+  setInterval(() => {
+    cpuEl.textContent = Math.round(15 + Math.random() * 70) + '%';
+    latEl.textContent = Math.round(8 + Math.random() * 40) + ' ms';
+  }, 1200);
+
+  // Session counter persists in localStorage
+  let session = +localStorage.getItem('dl-session') || 0;
+  const sessionEl = document.getElementById('session');
+  sessionEl.textContent = ++session; localStorage.setItem('dl-session', session);
+
+  // ---- FPS meter ----
+  const fpsEl = document.getElementById('fps');
+  let frames = 0, last = performance.now();
+  function fpsLoop(now) {
+    frames++;
+    if (now - last >= 1000) { fpsEl.textContent = frames; frames = 0; last = now; }
+    requestAnimationFrame(fpsLoop);
+  }
+  requestAnimationFrame(fpsLoop);
+
+  // ---- Interactive counter ----
+  let count = 0;
+  const countEl = document.getElementById('count');
+  document.getElementById('addBtn').addEventListener('click', () => countEl.textContent = ++count);
+  document.getElementById('minusBtn').addEventListener('click', () => countEl.textContent = --count);
+  document.getElementById('resetBtn').addEventListener('click', () => { count = 0; countEl.textContent = 0; });
+
+  // ---- Energy bar ----
+  let energy = 60;
+  const bar = document.getElementById('bar');
+  function render(){ energy = Math.max(0, Math.min(100, energy)); bar.style.width = energy + '%'; }
+  document.getElementById('chargeBtn').addEventListener('click', () => { energy += 12; render(); });
+  document.getElementById('drainBtn').addEventListener('click', () => { energy -= 12; render(); });
+  render();
+</script>
+</body>
+</html>
